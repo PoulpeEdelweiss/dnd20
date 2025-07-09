@@ -12,14 +12,12 @@
       font-family: sans-serif;
       text-align: center;
     }
-
-    #canvas {
+    canvas {
       background: #1f2937;
       display: block;
       margin: 40px auto;
       border-radius: 20px;
     }
-
     button {
       font-size: 20px;
       padding: 12px 30px;
@@ -29,11 +27,9 @@
       border-radius: 10px;
       cursor: pointer;
     }
-
     button:hover {
       background-color: #2563eb;
     }
-
     .result {
       margin-top: 10px;
       font-size: 28px;
@@ -44,7 +40,7 @@
 <body>
   <div class="dice">🎲</div>
 
-  <canvas id="canvas" width="400" height="400"></canvas>
+  <canvas id="canvas" width="500" height="500"></canvas>
   <br />
 
   <button onclick="rollDice()">Бросить D20</button>
@@ -55,76 +51,79 @@
     const ctx = canvas.getContext('2d');
     const resultEl = document.getElementById('result');
 
-    let currentNumber = 1;
-    let rolling = false;
+const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+    const TRIANGLE_SIZE = 90;
 
-    // Координаты граней 20-гранника (упрощённый псевдо-3D икосаэдр)
-    const faces = [
-      [[0, -100], [86, -50], [53, 60]], // верхняя грань
-      [[0, -100], [-86, -50], [-53, 60]], // вторая
-      [[86, -50], [100, 60], [53, 60]], // третья
-      [[-86, -50], [-100, 60], [-53, 60]], // четвёртая
-      [[-53, 60], [0, 100], [53, 60]], // нижняя грань
-      [[100, 60], [53, 60], [0, 100]], // боковая
-    ];
+    // Рисует одну грань-треугольник
+    function drawFace(cx, cy, size, rotation, color, number) {
+      const points = [];
+      for (let i = 0; i < 3; i++) {
+        const angle = (Math.PI * 2 / 3) * i + rotation;
+        const x = cx + Math.cos(angle) * size;
+        const y = cy + Math.sin(angle) * size;
+        points.push({ x, y });
+      }
 
-    function drawDice(number) {
+      ctx.beginPath();
+      ctx.moveTo(points[0].x, points[0].y);
+      ctx.lineTo(points[1].x, points[1].y);
+      ctx.lineTo(points[2].x, points[2].y);
+      ctx.closePath();
+      ctx.fillStyle = color;
+      ctx.fill();
+      ctx.strokeStyle = '#000';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      // Номер
+      const textX = (points[0].x + points[1].x + points[2].x) / 3;
+      const textY = (points[0].y + points[1].y + points[2].y) / 3;
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 22px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(number, textX, textY);
+    }
+
+    function drawDice(numbers) {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      const centerX = canvas.width / 2;
-      const centerY = canvas.height / 2;
+      // Центральная грань
+      drawFace(centerX, centerY, TRIANGLE_SIZE, Math.PI, '#3b82f6', numbers[0]);
 
-      ctx.save();
-      ctx.translate(centerX, centerY);
+      const offset = 100;
+      const small = TRIANGLE_SIZE * 0.8;
+      const dark = '#1e40af';
+      const mid = '#2563eb';
 
-      faces.forEach((face, index) => {
-        ctx.beginPath();
-        ctx.moveTo(face[0][0], face[0][1]);
-        ctx.lineTo(face[1][0], face[1][1]);
-        ctx.lineTo(face[2][0], face[2][1]);
-        ctx.closePath();
+      // Верхние 3 грани
+      drawFace(centerX, centerY - offset, small, Math.PI, mid, numbers[1]);
+      drawFace(centerX - offset * 0.8, centerY - offset * 0.6, small, Math.PI * 1.1, mid, numbers[2]);
+      drawFace(centerX + offset * 0.8, centerY - offset * 0.6, small, Math.PI * 0.9, mid, numbers[3]);
 
-        ctx.fillStyle = index === 0 ? "#3b82f6" : "#2563eb";
-        ctx.strokeStyle = "#1e40af";
-        ctx.lineWidth = 2;
-        ctx.fill();
-        ctx.stroke();
+      // Боковые 3 грани
+      drawFace(centerX - offset * 1.1, centerY, small, Math.PI * 1.4, dark, numbers[4]);
+      drawFace(centerX + offset * 1.1, centerY, small, Math.PI * 1.6, dark, numbers[5]);
+      drawFace(centerX, centerY + offset * 0.2, small, 0, mid, numbers[6]);
 
-        // Показываем число только на верхней грани
-        if (index === 0) {
-          const x = (face[0][0] + face[1][0] + face[2][0]) / 3;
-          const y = (face[0][1] + face[1][1] + face[2][1]) / 3;
-          ctx.fillStyle = "white";
-          ctx.font = "bold 36px sans-serif";
-          ctx.textAlign = "center";
-          ctx.textBaseline = "middle";
-          ctx.fillText(number, x, y);
-        }
-      });
-
-      ctx.restore();
+      // Нижние 3 грани
+      drawFace(centerX, centerY + offset, small, 0, mid, numbers[7]);
+      drawFace(centerX - offset * 0.8, centerY + offset * 0.7, small, Math.PI * 1.2, dark, numbers[8]);
+      drawFace(centerX + offset * 0.8, centerY + offset * 0.7, small, Math.PI * 0.8, dark, numbers[9]);
     }
 
     function rollDice() {
-      if (rolling) return;
-      rolling = true;
-      resultEl.textContent = "Бросаю...";
-
-      let frames = 30;
-      const interval = setInterval(() => {
-        currentNumber = Math.floor(Math.random() * 20) + 1;
-        drawDice(currentNumber);
-        frames--;
-
-        if (frames <= 0) {
-          clearInterval(interval);
-          rolling = false;
-          resultEl.textContent = `Результат: ${currentNumber}`;
-        }
-      }, 40);
+      const numbers = [];
+      while (numbers.length < 10) {
+        const n = Math.floor(Math.random() * 20) + 1;
+        if (!numbers.includes(n)) numbers.push(n);
+      }
+      resultEl.textContent = `Результат: ${numbers[0]}`;
+      drawDice(numbers);
     }
 
-    drawDice(currentNumber);
+    rollDice(); // начальная отрисовка
   </script>
 </body>
 </html>
