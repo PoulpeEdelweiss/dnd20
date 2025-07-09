@@ -2,148 +2,62 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>D20 Кубик</title>
+  <title>Three.js D20 Кубик</title>
   <style>
     body {
       margin: 0;
       overflow: hidden;
-      background: #111827;
-      color: white;
-      font-family: sans-serif;
-      text-align: center;
+      background-color: #111827;
     }
     canvas {
       display: block;
     }
-    #ui {
-      position: absolute;
-      top: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-    }
-    button {
-      font-size: 20px;
-      padding: 10px 20px;
-      background-color: #3b82f6;
-      color: white;
-      border: none;
-      border-radius: 10px;
-      cursor: pointer;
-    }
-    button:hover {
-      background-color: #2563eb;
-    }
-    .result {
-      margin-top: 10px;
-      font-size: 28px;
-      color: #facc15;
-    }
   </style>
 </head>
 <body>
-  <div class="dice">🎲</div>
-
-  <canvas id="canvas" width="500" height="500"></canvas>
-  <br />
-
-  <button onclick="rollDice()">Бросить D20</button>
-  <div class="result" id="result">Результат: -</div>
-
-
-  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/controls/OrbitControls.js"></script>
-
+  <script src="https://cdn.jsdelivr.net/npm/three@0.156.1/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.156.1/examples/js/controls/OrbitControls.js"></script>
   <script>
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(50, window.innerWidth/window.innerHeight, 0.1, 1000);
+
+    const camera = new THREE.PerspectiveCamera(
+      45, window.innerWidth / window.innerHeight, 0.1, 1000
+    );
+    camera.position.z = 5;
+
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
+    // Освещение
+    const light = new THREE.PointLight(0xffffff, 1);
+    light.position.set(10, 10, 10);
+    scene.add(light);
+    scene.add(new THREE.AmbientLight(0x404040));
+
+    // D20 кубик (икосаэдр)
+    const geometry = new THREE.IcosahedronGeometry(1, 0);
+    const material = new THREE.MeshStandardMaterial({
+      color: 0x3b82f6,
+      flatShading: true
+    });
+    const d20 = new THREE.Mesh(geometry, material);
+    scene.add(d20);
+
+    // Управление мышью
     const controls = new THREE.OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true;
 
-    camera.position.set(0, 0, 5);
-
-    // Свет
-    const ambient = new THREE.AmbientLight(0xffffff, 0.8);
-    scene.add(ambient);
-    const directional = new THREE.DirectionalLight(0xffffff, 1);
-    directional.position.set(1, 2, 3);
-    scene.add(directional);
-
-    // Геометрия D20
-    const geometry = new THREE.IcosahedronGeometry(1, 0); // Икосаэдр = 20 граней
-    const materials = [];
-
-    // Добавим текст на каждую грань
-    const faceTexts = Array.from({ length: 20 }, (_, i) => i + 1);
-
-    // Каждая грань имеет свой материал с текстом
-    for (let i = 0; i < 20; i++) {
-      const canvas = document.createElement('canvas');
-      canvas.width = canvas.height = 256;
-      const ctx = canvas.getContext('2d');
-      ctx.fillStyle = '#3b82f6';
-      ctx.fillRect(0, 0, 256, 256);
-      ctx.fillStyle = '#fff';
-      ctx.font = 'bold 96px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(faceTexts[i], 128, 128);
-      const texture = new THREE.CanvasTexture(canvas);
-      materials.push(new THREE.MeshBasicMaterial({ map: texture }));
-    }
-
-    // Используем geometry.groups чтобы привязать материалы
-    geometry.clearGroups();
-    for (let i = 0; i < 20; i++) {
-      geometry.addGroup(i * 3, 3, i); // 3 вершины на грань, материал i
-    }
-
-    const dice = new THREE.Mesh(geometry, materials);
-    scene.add(dice);
-
-    let targetRotation = new THREE.Euler();
-    let isRolling = false;
-    const resultEl = document.getElementById("result");
-
-    function rollDice() {
-      if (isRolling) return;
-
-      const result = Math.floor(Math.random() * 20);
-      resultEl.textContent = 'Бросаю...';
-
-      // Простой поворот к новому углу
-      targetRotation = new THREE.Euler(
-        Math.random() * Math.PI * 4,
-        Math.random() * Math.PI * 4,
-        Math.random() * Math.PI * 4
-      );
-      isRolling = true;
-
-      setTimeout(() => {
-        resultEl.textContent = `Результат: ${result + 1}`;
-        isRolling = false;
-      }, 2000);
-    }
-
+    // Анимация
     function animate() {
       requestAnimationFrame(animate);
-      controls.update();
-
-      // Плавный поворот к цели
-      if (isRolling) {
-        dice.rotation.x += (targetRotation.x - dice.rotation.x) * 0.1;
-        dice.rotation.y += (targetRotation.y - dice.rotation.y) * 0.1;
-        dice.rotation.z += (targetRotation.z - dice.rotation.z) * 0.1;
-      }
-
+      d20.rotation.x += 0.005;
+      d20.rotation.y += 0.01;
       renderer.render(scene, camera);
     }
     animate();
-    window.addEventListener("resize", () => {
+
+    // Адаптация к размеру окна
+    window.addEventListener('resize', () => {
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
