@@ -6,51 +6,118 @@
   <title>D20 Кубик</title>
   <style>
     body {
+      margin: 0;
+      background: #111827;
+      color: white;
       font-family: sans-serif;
       text-align: center;
-      padding-top: 50px;
-      background: #f9f9f9;
     }
 
-    .dice {
-      font-size: 120px;
-      color: #3b82f6;
-      margin: 40px;
-    }
-
-    .result {
-      font-size: 48px;
-      margin-top: 20px;
+    #canvas {
+      background: #1f2937;
+      display: block;
+      margin: 40px auto;
+      border-radius: 20px;
     }
 
     button {
-      font-size: 24px;
-      padding: 10px 30px;
-      border: none;
-      border-radius: 10px;
+      font-size: 20px;
+      padding: 12px 30px;
       background-color: #3b82f6;
       color: white;
+      border: none;
+      border-radius: 10px;
       cursor: pointer;
     }
 
     button:hover {
       background-color: #2563eb;
     }
+
+    .result {
+      margin-top: 10px;
+      font-size: 28px;
+      color: #facc15;
+    }
   </style>
 </head>
 <body>
   <div class="dice">🎲</div>
+
+  <canvas id="canvas" width="300" height="300"></canvas>
+  <br />
+
   <button onclick="rollDice()">Бросить D20</button>
   <div class="result" id="result">Результат: -</div>
 
   <script>
-    function rollDice() {
-      const result = Math.floor(Math.random() * 20) + 1;
-      document.getElementById('result').textContent = `Результат: ${result}`;
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const resultEl = document.getElementById('result');
+
+    let rolling = false;
+    let angle = 0;
+    let currentNumber = 1;
+
+    function drawDice(number, rotation = 0) {
+      const centerX = canvas.width / 2;
+      const centerY = canvas.height / 2;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Draw background polygon (simulating icosahedron)
+      ctx.save();
+      ctx.translate(centerX, centerY);
+      ctx.rotate(rotation);
+      ctx.beginPath();
+
+      const sides = 20;
+      const radius = 100;
+
+      for (let i = 0; i <= sides; i++) {
+        const theta = (i / sides) * Math.PI * 2;
+        const x = Math.cos(theta) * radius;
+        const y = Math.sin(theta) * radius;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+
+      ctx.closePath();
+      ctx.fillStyle = '#3b82f6';
+      ctx.fill();
+      ctx.restore();
+
+      // Draw number
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 64px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(number, centerX, centerY);
     }
 
-    // Подключение Telegram WebApp SDK (если хотите доступ к Telegram API)
-    // <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    function rollDice() {
+      if (rolling) return;
+
+      rolling = true;
+      resultEl.textContent = 'Бросаю...';
+      let frames = 30;
+      let interval = 30;
+
+      const rollInterval = setInterval(() => {
+        currentNumber = Math.floor(Math.random() * 20) + 1;
+        angle += 0.3;
+        drawDice(currentNumber, angle);
+        frames--;
+
+        if (frames <= 0) {
+          clearInterval(rollInterval);
+          rolling = false;
+          resultEl.textContent = `Результат: ${currentNumber}`;
+        }
+      }, interval);
+    }
+
+    drawDice(currentNumber); // initial draw
   </script>
 </body>
 </html>
