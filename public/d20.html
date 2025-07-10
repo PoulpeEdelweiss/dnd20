@@ -8,29 +8,48 @@
     body {
       font-family: sans-serif;
       text-align: center;
-      padding-top: 50px;
-      background: #f9f9f9;
+      background: #f0f4f8;
+      margin: 0;
+      padding: 40px 20px;
     }
 
-    .dice {
-      font-size: 120px;
-      color: #3b82f6;
-      margin: 40px;
+    .container {
+      max-width: 400px;
+      margin: auto;
     }
 
-    .result {
-      font-size: 48px;
-      margin-top: 20px;
+    .dice-container {
+      position: relative;
+      display: inline-block;
+    }
+
+    .dice-image {
+      width: 100%;
+      max-width: 300px;
+      height: auto;
+    }
+
+    .dice-number {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 64px;
+      font-weight: bold;
+      color: #fff;
+      text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.7);
+      pointer-events: none;
     }
 
     button {
-      font-size: 24px;
-      padding: 10px 30px;
+      font-size: 20px;
+      padding: 12px 30px;
       border: none;
       border-radius: 10px;
       background-color: #3b82f6;
       color: white;
       cursor: pointer;
+      margin-top: 30px;
     }
 
     button:hover {
@@ -39,18 +58,22 @@
   </style>
 </head>
 <body>
-  <div class="dice">🎲</div>
-  <button onclick="rollDice()">Бросить D20</button>
-  <div class="result" id="result">Результат: -</div>
+  <div class="container">
+    <div class="dice-container">
+      <img src="d20.png" alt="D20 кубик" class="dice-image" />
+      <div id="dice-number" class="dice-number">-</div>
+    </div>
+    <button onclick="rollDice()">Бросить D20</button>
+  </div>
+
+  <!-- Telegram WebApp SDK (опционально подключите, если нужно взаимодействие с Telegram API) -->
+  <!-- <script src="https://telegram.org/js/telegram-web-app.js"></script> -->
 
   <script>
     function rollDice() {
       const result = Math.floor(Math.random() * 20) + 1;
-      document.getElementById('result').textContent = `Результат: ${result}`;
+      document.getElementById('dice-number').textContent = result;
     }
-    // Подключение Telegram WebApp SDK (если хотите доступ к Telegram API)
-    // <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    
   </script>
 </body>
 </html>
